@@ -1,0 +1,306 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Reusable Security Primitives ---
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidCategory(cat) {
+      return cat in [
+        'Graphic Design',
+        'UI/UX',
+        'Photography',
+        'Architecture',
+        'Development',
+        'Illustration',
+        'Writing',
+        'Video',
+        'Art',
+        'Other'
+      ];
+    }
+
+    function isValidAspectHint(hint) {
+      return hint in ['portrait', 'landscape', 'square'];
+    }
+
+    function isValidUrlOrEmpty(val) {
+      return val is string && val.size() <= 500 && (
+        val == '' ||
+        val.matches('^https://.*') ||
+        val.matches('^http://.*') ||
+        val.matches('^/api/uploads/.*') ||
+        val.matches('^/src/assets/images/.*')
+      );
+    }
+
+    // --- Validation Blueprints ---
+    function isValidCreator(data, creatorId) {
+      return data.keys().hasAll([
+          'id',
+          'username',
+          'displayName',
+          'bio',
+          'disciplines',
+          'avatarUrl',
+          'location',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'username',
+          'displayName',
+          'bio',
+          'disciplines',
+          'avatarUrl',
+          'location',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == creatorId &&
+        data.id == request.auth.uid &&
+        data.username is string &&
+        data.username.size() >= 3 &&
+        data.username.size() <= 24 &&
+        data.username.matches('^[a-z0-9._-]+$') &&
+        data.displayName is string &&
+        data.displayName.size() >= 1 &&
+        data.displayName.size() <= 60 &&
+        data.bio is string &&
+        data.bio.size() <= 280 &&
+        data.disciplines is list &&
+        data.disciplines.size() <= 10 &&
+        (data.disciplines.size() == 0 || (data.disciplines[0] is string && isValidCategory(data.disciplines[0]))) &&
+        isValidUrlOrEmpty(data.avatarUrl) &&
+        data.location is string &&
+        data.location.size() <= 60 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUser(data, userId) {
+      return data.keys().hasAll([
+          'uid',
+          'email',
+          'username',
+          'onboardingComplete',
+          'savedProjectIds',
+          'likedProjectIds',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid',
+          'email',
+          'username',
+          'onboardingComplete',
+          'savedProjectIds',
+          'likedProjectIds',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.uid == request.auth.uid &&
+        data.email is string &&
+        data.email.size() >= 3 &&
+        data.email.size() <= 120 &&
+        data.username is string &&
+        data.username.size() >= 3 &&
+        data.username.size() <= 24 &&
+        data.username.matches('^[a-z0-9._-]+$') &&
+        data.onboardingComplete is bool &&
+        data.savedProjectIds is list &&
+        data.savedProjectIds.size() <= 200 &&
+        (data.savedProjectIds.size() == 0 || (data.savedProjectIds[0] is string && data.savedProjectIds[0].size() <= 128)) &&
+        data.likedProjectIds is list &&
+        data.likedProjectIds.size() <= 500 &&
+        (data.likedProjectIds.size() == 0 || (data.likedProjectIds[0] is string && data.likedProjectIds[0].size() <= 128)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidProject(data, projectId) {
+      return data.keys().hasAll([
+          'id',
+          'title',
+          'description',
+          'category',
+          'imageUrl',
+          'externalUrl',
+          'creatorId',
+          'aspectHint',
+          'likesCount',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'title',
+          'description',
+          'category',
+          'imageUrl',
+          'externalUrl',
+          'creatorId',
+          'aspectHint',
+          'likesCount',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == projectId &&
+        data.title is string &&
+        data.title.size() >= 2 &&
+        data.title.size() <= 100 &&
+        data.description is string &&
+        data.description.size() >= 10 &&
+        data.description.size() <= 1200 &&
+        data.category is string &&
+        isValidCategory(data.category) &&
+        data.imageUrl is string &&
+        data.imageUrl.size() >= 1 &&
+        data.imageUrl.size() <= 500 &&
+        isValidUrlOrEmpty(data.imageUrl) &&
+        isValidUrlOrEmpty(data.externalUrl) &&
+        isValidId(data.creatorId) &&
+        data.creatorId == request.auth.uid &&
+        data.aspectHint is string &&
+        isValidAspectHint(data.aspectHint) &&
+        data.likesCount is int &&
+        data.likesCount >= 0 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // --- Collection: creators (Public PII-free profiles) ---
+    match /creators/{creatorId} {
+      allow get: if isSignedIn() && isValidId(creatorId);
+      allow list: if isSignedIn() && resource.data.id == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(creatorId) &&
+        isOwner(creatorId) &&
+        isValidCreator(incoming(), creatorId) &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(creatorId) &&
+        isOwner(creatorId) &&
+        isValidCreator(incoming(), creatorId) &&
+        incoming().id == existing().id &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'username',
+          'displayName',
+          'bio',
+          'disciplines',
+          'avatarUrl',
+          'location',
+          'updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() && isValidId(creatorId) && isOwner(creatorId);
+    }
+
+    // --- Collection: users (Owner-only PII & private interactions) ---
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && isOwner(userId);
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUser(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUser(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().email == existing().email &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'username',
+            'onboardingComplete',
+            'updatedAt'
+          ]) ||
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'savedProjectIds',
+            'likedProjectIds',
+            'updatedAt'
+          ])
+        );
+
+      allow delete: if isSignedIn() && isValidId(userId) && isOwner(userId);
+    }
+
+    // --- Collection: projects (Creator-owned published portfolio works) ---
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId);
+      allow list: if isSignedIn() && resource.data.creatorId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(projectId) &&
+        isValidProject(incoming(), projectId) &&
+        incoming().likesCount == 0 &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(projectId) &&
+        existing().creatorId == request.auth.uid &&
+        isValidProject(incoming(), projectId) &&
+        incoming().id == existing().id &&
+        incoming().creatorId == existing().creatorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title',
+          'description',
+          'category',
+          'externalUrl',
+          'updatedAt'
+        ]);
+
+      allow delete: if isSignedIn() &&
+        isValidId(projectId) &&
+        existing().creatorId == request.auth.uid;
+    }
+  }
+}

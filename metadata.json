@@ -1,0 +1,6 @@
+{
+  "name": "UNSEEN",
+  "description": "Every Creator Deserves to Be Seen. A mobile-first creative portfolio and rotating discovery platform for emerging creators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,207 @@
+{
+  "entities": {
+    "CreatorPublicProfile": {
+      "title": "CreatorPublicProfile",
+      "description": "Public creator portfolio identity without PII.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 24,
+          "pattern": "^[a-z0-9._-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "disciplines": {
+          "type": "array",
+          "description": "Up to 10 creative disciplines."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "displayName",
+        "bio",
+        "disciplines",
+        "avatarUrl",
+        "location",
+        "updatedAt"
+      ]
+    },
+    "UserPrivateAccount": {
+      "title": "UserPrivateAccount",
+      "description": "Owner-only private account data containing PII (email) and personal saved/liked indices.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "username": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 24,
+          "pattern": "^[a-z0-9._-]+$"
+        },
+        "onboardingComplete": {
+          "type": "boolean"
+        },
+        "savedProjectIds": {
+          "type": "array",
+          "description": "Up to 200 bookmarked project IDs."
+        },
+        "likedProjectIds": {
+          "type": "array",
+          "description": "Up to 500 appreciated project IDs."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "username",
+        "onboardingComplete",
+        "savedProjectIds",
+        "likedProjectIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProjectItem": {
+      "title": "ProjectItem",
+      "description": "Published creative project metadata persisted in Firestore.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1200
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Graphic Design",
+            "UI/UX",
+            "Photography",
+            "Architecture",
+            "Development",
+            "Illustration",
+            "Writing",
+            "Video",
+            "Art",
+            "Other"
+          ]
+        },
+        "imageUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "externalUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "creatorId": {
+          "type": "string",
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "aspectHint": {
+          "type": "string",
+          "enum": ["portrait", "landscape", "square"]
+        },
+        "likesCount": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "category",
+        "imageUrl",
+        "externalUrl",
+        "creatorId",
+        "aspectHint",
+        "likesCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/creators/{creatorId}": {
+      "schema": { "$ref": "#/entities/CreatorPublicProfile" },
+      "description": "Public creator profiles (PII-free)."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPrivateAccount" },
+      "description": "Private creator account data and PII isolated strictly to owner."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/ProjectItem" },
+      "description": "Creator-owned published portfolio works synced with UNSEEN backend."
+    }
+  }
+}

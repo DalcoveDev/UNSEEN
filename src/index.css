@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-black: #000000;
+    --surface-dark: #1a1a1a;
+    --surface-elevated: #2a2a2a;
+    --text-white: #ffffff;
+    --text-muted: #a0a0a0;
+
+    --accent-purple: #9933ff;
+    --accent-pink: #ff3dae;
+    --accent-cyan: #00d4ff;
+    --accent-green: #00ff99;
+    --accent-yellow: #ffe600;
+
+    --border-hairline: rgba(255, 255, 255, 0.16);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    background-color: var(--bg-black);
+    color: var(--text-white);
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-x: none;
+    color-scheme: dark;
+  }
+}
+
+.font-display {
+  font-family: "Bricolage Grotesque", "Plus Jakarta Sans", sans-serif;
+}
+
+.font-mono-tabular {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Crisp dark geometric micro-grid texture */
+.bg-playground-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Crisp 2-color checkerboard graphic strip */
+.bg-checker-strip {
+  background-image: conic-gradient(
+    #ffffff 90deg,
+    #000000 90deg 180deg,
+    #ffffff 180deg 270deg,
+    #000000 270deg
+  );
+  background-size: 12px 12px;
+}
+
+.bg-checker-yellow {
+  background-image: conic-gradient(
+    #ffe600 90deg,
+    #000000 90deg 180deg,
+    #ffe600 180deg 270deg,
+    #000000 270deg
+  );
+  background-size: 14px 14px;
+}
+
+@keyframes unseen-marquee-slide {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-ribbon {
+  animation: unseen-marquee-slide 22s linear infinite;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-ribbon {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
